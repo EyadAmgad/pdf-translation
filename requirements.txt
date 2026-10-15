@@ -10,3 +10,5 @@ google-auth-httplib2>=0.2.0
 pymupdf4llm==1.27.2.3
 fastapi==0.115.12
 uvicorn==0.34.3
+openai==2.43.0
+json-repair==0.61.0
