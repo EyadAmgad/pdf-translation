@@ -40,7 +40,7 @@ _REVISION_PROMPT = textwrap.dedent("""\
     {report}
 
     --- REVIEWER FEEDBACK ---
-    "no edit needed"
+    {feedback}
 
     Return ONLY a JSON object matching this exact schema - no markdown, no code block:
     {{

@@ -112,7 +112,37 @@ Possible technologies for this project include:
 - Translation API or LLM-based translation service
 - FastAPI or similar API layer
 - PostgreSQL or another durable metadata store
+## How to use it step by step 
+First activate conda and install requirements 
+```bash
+conda activate pdf-translation
 
+pip install -r requirements.txt
+```
+Then go to target directory (ai-workflow) , do that in two termianls
+``` bash
+cd src
+cd ai-workflow
+```
+in first terminal run the following command to run temporal
+``` bash
+temporal server start-dev
+```
+in the second terminal run this command to run the worker
+
+```bash
+python worker.py
+```
+in another terminal activate conda and go to client-app directory 
+```bash
+cd src
+cd client-app
+```
+then run fastapi as producer 
+``` bash
+uvicorn main:app --host 0.0.0.0 --port 8080 --reload
+```
+      
 ## Project Goals
 
 This project aims to:
