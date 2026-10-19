@@ -1,51 +1,48 @@
 # PDF Translation Workflow with Temporal and Human-in-the-Loop
 
-This project aims to automate the translation of PDF files stored in Google Drive into Arabic using Temporal for workflow orchestration and a human review step to ensure quality and accuracy.
+A workflow-driven system for extracting text from PDF files stored in Google Drive, translating the content into Arabic, and routing the result through a human review process before final approval.
 
 ## Overview
 
-Organizations often store important PDF documents in Google Drive, including contracts, reports, manuals, research papers, and knowledge-base files. Translating these documents manually is time-consuming, error-prone, and hard to scale.
+This project is designed for organizations that keep contract, policy, research, or operational PDFs in Google Drive and need a repeatable, auditable translation pipeline. Instead of translating documents manually, the system automates the ETL-like flow from document ingestion to translated output while preserving reviewability and operational traceability.
 
-This project provides a reliable workflow that:
+The solution combines:
 
-- monitors or receives PDF files from Google Drive
-- extracts the text content from each document
-- orchestrates the translation process through Temporal workflows
-- translates the content into Arabic
-- sends the translated document for human approval or editing
-- stores the final approved version back to Drive
+- Google Drive document access
+- PDF parsing and text extraction
+- Temporal orchestration for durable workflows and retries
+- LLM-based translation
+- Human review and approval cycles
 
-The goal is to create a dependable, auditable, and scalable translation pipeline that combines automation and human expertise.
+The result is a more scalable and controlled translation process that reduces repetitive work while keeping quality review in the loop.
 
 ## Why Temporal?
 
-Temporal is used to manage long-running, stateful workflows in a resilient and observable way.
+Temporal is used to manage long-running workflows with strong failure handling, retries, and workflow observability. In this project, it is responsible for orchestrating the sequence of work that spans document download, extraction, translation, and human review.
 
-It helps this project handle tasks such as:
+This helps the system manage:
 
-- retrying failed translation jobs
-- waiting for human review approval
-- tracking document states through each stage
-- handling retries and timeouts automatically
-- providing visibility into workflow execution and failures
-
-With Temporal, the translation process becomes durable and easier to operate in production.
+- retries for failed PDF extraction or translation tasks
+- state tracking across workflow stages
+- review checkpoints and approval decisions
+- long-running execution without manual coordination
+- operational visibility through the Temporal UI
 
 ## Human-in-the-Loop Design
 
-The translation workflow does not stop at AI-generated output alone. A human reviewer is included in the loop to validate the translation quality before finalizing the document.
+The workflow does not assume AI output is final. A reviewer is included in the process to validate quality, improve accuracy, and decide whether the translation should be accepted or revised.
 
-Typical review stages include:
+Typical flow:
 
-1. PDF uploaded to Drive
-2. Workflow started in Temporal
-3. Document parsed and content extracted
-4. Text translated to Arabic
-5. Translated output reviewed by a human reviewer
-6. Reviewer approves or requests revision
-7. Final version is saved to Drive and marked complete
+1. A PDF is uploaded or selected in Google Drive.
+2. The workflow is started in Temporal.
+3. The document is downloaded and text is extracted.
+4. Extracted content is translated into Arabic.
+5. The result is reviewed by a human reviewer.
+6. The reviewer approves or requests revision.
+7. The final approved output is saved and tracked.
 
-This allows the system to balance automation speed with domain-specific accuracy and language quality.
+This hybrid model balances automation, speed, and domain-specific quality control.
 
 ## High-Level Workflow
 
@@ -55,38 +52,44 @@ Google Drive PDF
       v
 Temporal Workflow
       |
-      +--> Extract document text
+      +--> Download file
+      |
+      +--> Extract PDF text
       |
       +--> Translate to Arabic
       |
-      +--> Create review task for human
+      +--> Human review / revision
       |
-      +--> Human approves or revises
+      +--> Approve final result
       |
-      +--> Save approved Arabic PDF to Drive
-      |
-      +--> Mark workflow complete
+      +--> Track workflow state and outcomes
 ```
+
+## System Design
+
+![System design diagram](system-diagram.png)
+
+This system uses Google Drive as the document source and Temporal as the orchestration layer for durable execution. A worker downloads the PDF, extracts the content, forwards the text to the translation service, and routes the result through a reviewer approval loop. The architecture is designed to make every stage observable, reviewable, and resilient to transient failures.
 
 ## Core Features
 
 - PDF ingestion from Google Drive
-- OCR and text extraction for scanned documents
-- Arabic translation workflow orchestration with Temporal
-- Retry and failure handling
-- Human review and approval step
-- Final document export and storage back to Drive
-- Workflow monitoring and state tracking
-- Support for auditability and operational visibility
+- Text extraction from PDF documents
+- Arabic translation workflow orchestration
+- Retry and failure handling through Temporal
+- Human validation and revision support
+- Workflow state tracking and monitoring
+- Auditable processing flow for review and quality control
 
 ## Suggested Architecture
 
-- Google Drive API: for reading and uploading PDF files
-- Temporal Worker: for executing workflow steps
-- Translation service: for converting source text into Arabic
-- Review interface: for human validation and approval
-- Storage layer: for preserving intermediate and final versions
-- Monitoring tools: for workflow status and debugging
+- Google Drive API for file discovery and access
+- Temporal worker for workflow orchestration and execution
+- PDF parsing and text extraction layer
+- LLM or translation service for Arabic translation
+- FastAPI endpoint layer for workflow triggers and status checks
+- Review interface for human approval or revision
+- Storage for downloaded PDFs, extracted content, and final outputs
 
 ## Example Workflow States
 
@@ -103,68 +106,173 @@ Temporal Workflow
 
 ## Tech Stack
 
-Possible technologies for this project include:
-
 - Python
 - Temporal SDK
 - Google Drive API
-- PDF parsing / OCR libraries
-- Translation API or LLM-based translation service
-- FastAPI or similar API layer
-- PostgreSQL or another durable metadata store
-## How to use it step by step 
-First activate conda and install requirements 
+- PyMuPDF / PDF extraction tooling
+- OpenRouter or LLM-based translation service
+- FastAPI
+- PostgreSQL or other durable metadata store (optional for future extension)
+
+## Project Structure
+
+```text
+pdf-translation/
+├── README.md
+├── requirements.txt
+├── src/
+│   ├── ai-workflow/
+│   │   ├── activities.py
+│   │   ├── child_workflow.py
+│   │   ├── helpers.py
+│   │   ├── parent_workflow.py
+│   │   ├── prompts.py
+│   │   ├── worker.py
+│   │   └── .env
+│   ├── client-app/
+│   │   ├── main.py
+│   │   └── .env
+│   └── pdf-to-md/
+│       ├── download_pdf.py
+│       ├── helpers.py
+│       └── workflow_process.py
+└── assets/
+```
+
+## Local Setup
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/EyadAmgad/pdf-translation.git
+cd pdf-translation
+```
+
+### 2. Create environment variables
+
+Copy the example environment file and fill in your own values:
+
+```bash
+cp src/ai-workflow/.env.example src/ai-workflow/.env
+cp src/client-app/.env.example src/client-app/.env
+```
+
+At minimum, configure:
+
+- Google Drive credentials or API key
+- OpenRouter API key
+- Temporal host and namespace
+- task queue values
+
+### 3. Install dependencies
+
 ```bash
 conda activate pdf-translation
-
 pip install -r requirements.txt
 ```
-Then go to target directory (ai-workflow) , do that in two termianls
-``` bash
-cd src
-cd ai-workflow
-```
-in first terminal run the following command to run temporal
-``` bash
-temporal server start-dev
-```
-in the second terminal run this command to run the worker
+
+## Running the Application
+
+### Start Temporal
+
+Open a terminal and run:
 
 ```bash
+temporal server start-dev
+```
+
+### Start the worker
+
+In a second terminal:
+
+```bash
+cd src/ai-workflow
 python worker.py
 ```
-in another terminal activate conda and go to client-app directory 
+
+### Start the FastAPI app
+
+In another terminal:
+
 ```bash
-cd src
-cd client-app
-```
-then run fastapi as producer 
-``` bash
+cd src/client-app
 uvicorn main:app --host 0.0.0.0 --port 8080 --reload
 ```
-      
+
+### Trigger the review workflow
+
+```bash
+curl -X POST http://localhost:8080/translation-review/start \
+  -H "Content-Type: application/json" \
+  -d '{
+    "file_paths": [
+      "https://drive.google.com/file/d/FILE_ID/view?usp=drive_link",
+      "https://drive.google.com/file/d/FILE_ID_2/view?usp=drive_link"
+    ],
+    "max_concurrent_translations": 3
+  }'
+```
+
+### Check workflow status
+
+```bash
+curl http://localhost:8080/translation-review/<WORKFLOW_ID>/status
+```
+
+### Assign a reviewer
+
+```bash
+curl -X POST http://localhost:8080/translation-review/<WORKFLOW_ID>/assign \
+  -H "Content-Type: application/json" \
+  -d '{"name": "reviewer-name"}'
+```
+
+### Request revision
+
+```bash
+curl -X POST http://localhost:8080/translation-review/<WORKFLOW_ID>/revise \
+  -H "Content-Type: application/json" \
+  -d '{"feedback": "Please improve the wording and preserve legal terminology."}'
+```
+
+### Approve the workflow
+
+```bash
+curl http://localhost:8080/translation-review/<WORKFLOW_ID>/approve
+```
+
+### Temporal UI
+
+The Temporal UI is typically available at:
+
+```text
+http://localhost:8233
+```
+
 ## Project Goals
 
 This project aims to:
 
-- reduce manual effort in translating PDF documents
-- improve translation speed and consistency
-- integrate AI translation with human oversight
-- provide scalable orchestration for document workflows
-- make translation quality reviewable and traceable
+- reduce the manual effort required to translate PDF documents
+- create a reliable workflow for document extraction and translation
+- improve consistency and speed across translation tasks
+- integrate AI-generated translation with human review and oversight
+- support scalable orchestration for document processing pipelines
+- make translation quality easier to audit and validate
 
 ## Future Enhancements
 
 - support multiple target languages
-- integrate document layout-aware translation
-- support file versioning in Drive
-- add analytics for translation quality and reviewer feedback
-- enable automatic routing based on document type or priority
+- improve layout-aware extraction for complex PDFs
+- add file versioning and metadata tracking in Drive
+- integrate analytics for translation quality and reviewer feedback
+- enable automatic routing or prioritization by document type or urgency
+- add durable storage for approved final outputs
 
 ## License
 
-This project is intended for internal or experimental use unless otherwise specified.
+This project is intended for internal, experimental, or research-oriented use unless otherwise specified.
 
 ## Notes
 
-This README is a starting point for the project and can be expanded as the system architecture, APIs, and workflows are finalized.
+This README acts as a project overview and onboarding guide. As the system evolves, the architecture, API surface, and workflow details may be expanded to reflect production deployment requirements.
